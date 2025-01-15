@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-const API_URL = 'http://127.0.0.1:8000';
+const API_URL = 'https://restaurant-api-add9.onrender.com/';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
