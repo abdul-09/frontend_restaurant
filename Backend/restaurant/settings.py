@@ -93,8 +93,15 @@ WSGI_APPLICATION = "restaurant.wsgi.application"
 #         "NAME": BASE_DIR / "db.sqlite3",
 #     }
 # }
+
+
 DATABASES = {
-    "default": dj_database_url.parse(config("DATABASE_URL"))
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True
+    )
 }
 
 
@@ -255,10 +262,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 
-# Email settings for development (console backend)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DOMAIN = 'localhost:5173'
-SITE_NAME = 'Restaurant App'
+# # Email settings for development (console backend)
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# DOMAIN = 'localhost:5173'
+# SITE_NAME = 'Restaurant App'
 
 
 LOGGING = {

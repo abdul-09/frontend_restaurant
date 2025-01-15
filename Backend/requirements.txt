@@ -9,5 +9,6 @@ drf-spectacular
 djangorestframework-simplejwt
 gunicorn
 whitenoise
-psycopg2-binary
+psycopg2
+psycopg
 dj-database-url
