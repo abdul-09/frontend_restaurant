@@ -248,7 +248,7 @@ CSRF_COOKIE_HTTPONLY = False  # Set to False so JavaScript can read it
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "https://frontend-restaurant-orcin.vercel.app",
 ]
 
 # Session settings
