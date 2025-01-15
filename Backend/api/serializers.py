@@ -2,9 +2,11 @@ from rest_framework import serializers
 from .models import MenuItem, Category, Cart, CartItem, Order, OrderItem, Table, TableBooking, User
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from django.contrib.auth import get_user_model
+from django.conf import settings
 import bleach
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer
+from .utils import generate_unique_order_reference
 
 User = get_user_model()
 
@@ -68,6 +70,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
             "slug": {"read_only": True},
         }
 
+
     def validate(self, attrs):
         if attrs["price"] < 0:
             raise serializers.ValidationError("Price cannot be negative")
@@ -78,18 +81,28 @@ class MenuItemSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    item_name = serializers.StringRelatedField(
-        source="menuitem", read_only=True, many=False
-    )
+    name = serializers.CharField(source='menuitem.name', read_only=True)  # Add this line
+    # subtotal = serializers.SerializerMethodField()
 
+    
     class Meta:
         model = CartItem
-        fields = ["id", "menuitem", "item_name", "quantity", "unit_price", "price"]
+        fields = [
+            "id", 
+            "menuitem", 
+            "name",  # Include name in fields
+            "quantity", 
+            "price", 
+            # "subtotal",
+            
+        ]
         extra_kwargs = {
             "quantity": {"min_value": 1},
-            "unit_price": {"read_only": True},
             "price": {"read_only": True},
+            "id": {"read_only": True},
         }
+    # def get_total_price(self, obj):
+    #     return obj.price * obj.quantity
 
     def validate(self, attrs):
         if attrs["quantity"] < 0:
@@ -106,75 +119,125 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    item_name = serializers.StringRelatedField(
-        source="menuitem", read_only=True, many=False
-    )
+    id = serializers.IntegerField(source='pk', read_only=True)
+    name = serializers.CharField(source='menuitem.name', read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ["id", "menuitem", "item_name", "quantity", "price", "total_cost"]
+        fields = ['id', 'name', 'menuitem', 'quantity', 'price', 'specialInstructions']
+
+
+class DeliveryInfoSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    address = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    contactNumber = serializers.CharField()
+    instructions = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    preferredTime = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    total = serializers.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        read_only=True
+    items = OrderItemSerializer(many=True)
+    delivery = DeliveryInfoSerializer(write_only=True)
+    customer = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all()
     )
-    subtotal = serializers.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        read_only=True
-    )
+    reference = serializers.CharField(read_only=True)
 
     class Meta:
         model = Order
         fields = [
-            'id', 'customer', 'delivery_crew', 'status',
-            'total', 'subtotal', 'discount', 'delivery_type',
-            'table_booking', 'created', 'updated'
+            'id', 'customer', 'items', 'status',
+            'subtotal', 'tax', 'deliveryFee', 'total',
+            'paymentMethod', 'delivery', 'reference',
+            'created', 'updated'
         ]
-        read_only_fields = ['customer', 'total', 'subtotal']
+        read_only_fields = ['reference', 'created', 'updated']
 
     def validate(self, data):
-        if 'delivery_type' in data:
-            if data['delivery_type'] == 'dine_in' and 'table_booking' not in data:
-                raise serializers.ValidationError(
-                    {"table_booking": "Table booking is required for dine-in orders"}
-                )
+        print("Validating data:", data)
+            
+        if self.instance:  # Indicates this is an update
+                return data
+            
+            # Ensure all required fields are present for create requests
+        required_fields = ['customer', 'items', 'subtotal', 'tax', 'deliveryFee', 'total', 'paymentMethod', 'delivery']
+        for field in required_fields:
+            if field not in data:
+                    raise serializers.ValidationError({field: f"{field} is required"})
+            
+            # Validate delivery data
+        delivery_data = data.get('delivery', {})
+        if delivery_data.get('type') == 'delivery' and not delivery_data.get('address'):
+                raise serializers.ValidationError({'delivery': 'Address is required for delivery orders'})
+            
+            # Validate items
+        if not data.get('items'):
+                raise serializers.ValidationError({'items': 'At least one item is required'})
+            
         return data
 
 
-class CustomOrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
-    customer = UserSerializer(read_only=True)
-    delivery_crew = UserSerializer(read_only=True)
-
-    class Meta:
-        model = Order
-        fields = [
-            "id",
-            "customer",
-            "delivery_crew",
-            "created",
-            "updated",
-            "paid",
-            "status",
-            "discount",
-            "subtotal",
-            "total",
-            "items",
-        ]
-
-        extra_kwargs = {
-            "paid": {"read_only": True},
-            "created": {"read_only": True},
-            "updated": {"read_only": True},
-            "discount": {"read_only": True},
-            "subtotal": {"read_only": True},
-            "total": {"read_only": True},
-            "status": {"read_only": True},
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Represent customer as primary key
+        representation['customer'] = {
+        'id': instance.customer.id,
+        'email': instance.customer.email,
+        'username': instance.customer.username,
+        'firstName': instance.customer.first_name,
+        'lastName': instance.customer.last_name,
+    }
+        representation['delivery'] = {
+            'type': instance.delivery_type,
+            'address': instance.delivery_address or '',
+            'contactNumber': instance.contact_number,
+            'instructions': instance.delivery_instructions or '',
+            'preferredTime': instance.preferred_time or ''
         }
+        return representation
+
+    def create(self, validated_data):
+        print("Creating order with data:", validated_data)
+        items_data = validated_data.pop('items')
+        delivery_data = validated_data.pop('delivery')
+        
+
+        # Generate a unique reference
+        reference = generate_unique_order_reference()
+        while Order.objects.filter(reference=reference).exists():
+            reference = generate_unique_order_reference()
+
+        # Create the order
+        order = Order.objects.create(
+            reference=reference,
+            delivery_type=delivery_data['type'],
+            delivery_address=delivery_data.get('address'),
+            contact_number=delivery_data['contactNumber'],
+            delivery_instructions=delivery_data.get('instructions'),
+            preferred_time=delivery_data.get('preferredTime'),
+            **validated_data
+        )
+
+        print("Order created:", order)
+
+        # Create order items
+        for item_data in items_data:
+            OrderItem.objects.create(
+                order=order,
+                **item_data
+            )
+
+        return order
+
+
+class CustomOrderSerializer(OrderSerializer):
+    class Meta(OrderSerializer.Meta):
+        fields = [
+            'id', 'customer', 'items', 'status',
+            'subtotal', 'tax', 'deliveryFee', 'total',
+            'paymentMethod', 'delivery', 'reference',
+            'created', 'updated', 'paid'
+        ]
 
 
 class TableSerializer(serializers.ModelSerializer):

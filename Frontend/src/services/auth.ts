@@ -1,6 +1,11 @@
 import axiosInstance from '../utils/axios';
 import { RegisterData,  User } from '../types/auth';
 import { toast } from 'react-hot-toast';
+import { AxiosError } from 'axios';
+
+interface ErrorResponse {
+  [key: string]: string[];
+}
 
 export const authService = {
   login: async (email: string, password: string) => {
@@ -63,18 +68,18 @@ export const authService = {
       });
       toast.success('Registration successful!');
       return response.data;
-    } catch (error: any) {
-        if (error.response?.status === 400) {
-            const errorData = error.response.data;
-            Object.keys(errorData).forEach(key => {
-                if (Array.isArray(errorData[key])) {
-                    toast.error(`${key}: ${errorData[key][0]}`);
-                }
-            });
-        } else {
-            toast.error('Registration failed. Please try again.');
-        }
-        throw error;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 400) {
+        const errorData = error.response.data as ErrorResponse;
+        Object.keys(errorData).forEach(key => {
+          if (Array.isArray(errorData[key])) {
+            toast.error(`${key}: ${errorData[key][0]}`);
+          }
+        });
+      } else {
+        toast.error('Registration failed. Please try again.');
+      }
+      throw error;
     }
   },
 

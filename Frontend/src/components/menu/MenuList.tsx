@@ -4,7 +4,7 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axios';
 import { MenuItem } from '../../types/menu';
-import { useCartStore } from '../../store/cartStore';
+import cartService from '../../services/cartService';
 
 interface MenuListProps {
   selectedCategory: string | null;
@@ -21,18 +21,21 @@ export default function MenuList({ selectedCategory, searchQuery, sortBy }: Menu
     },
   });
 
-  const addItem = useCartStore((state) => state.addItem);
-
-  const handleAddToCart = (item: MenuItem) => {
-    addItem({
-      id: crypto.randomUUID(),
-      menuItemId: item.id.toString(),
-      name: item.name,
-      price: item.price,
-      quantity: 1,
-      image: item.image,
-    });
-    toast.success(`${item.name} added to cart`);
+  const handleAddToCart = async (item: MenuItem) => {
+    try {
+      await cartService.addToCart({
+        menuitem: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        image: item.image,
+      });
+      console.log("sent to backend")
+      toast.success(`${item.name} added to cart`);
+    } catch (error) {
+      toast.error('Failed to add item to cart');
+      console.error(error)
+    }
   };
 
   const filteredMenuItems = menuItems

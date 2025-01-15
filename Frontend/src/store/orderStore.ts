@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { OrderStore, Order } from '../types/order';
-import axiosInstance from '../utils/axios';
+import { OrderStore, CreateOrder } from '../types/order';
+import orderService from '../services/orderService';
+import { useAuthStore } from './authStore';
 
 export const useOrderStore = create<OrderStore>((set) => ({
   orders: [],
@@ -8,14 +9,17 @@ export const useOrderStore = create<OrderStore>((set) => ({
   isLoading: false,
   error: null,
 
-  createOrder: async (orderData) => {
+  createOrder: async (orderData: CreateOrder) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await axiosInstance.post('api/v1/orders/', orderData);
+      // const createdOrder = await orderService.createOrder(orderData);
+      const { order } = await orderService.createOrder(orderData);
       set((state) => ({
-        orders: [response.data, ...state.orders],
-        currentOrder: response.data,
+        orders: [order, ...state.orders],
+        currentOrder: order,
       }));
+      
+      return { message: 'Order created successfully', order };
     } catch (error) {
       set({ error: 'Failed to create order' });
       throw error;
@@ -27,11 +31,25 @@ export const useOrderStore = create<OrderStore>((set) => ({
   fetchOrders: async () => {
     try {
       set({ isLoading: true, error: null });
-      const response = await axiosInstance.get('api/v1/orders/');
-      set({ orders: response.data });
+      const orders = await orderService.getOrders();
+      const userId = useAuthStore.getState().user?.id;
+
+      console.log('User ID:', userId);
+      console.log('Fetched Orders:', orders);
+
+      const userOrders = userId 
+        ? orders.filter(order => {
+            console.log('Order Customer ID:', order.customer.id);
+            return order.customer?.id.toString() === userId.toString();
+          })
+        : [];
+        
+      console.log('Fetched user orders:', userOrders);
+      set({ orders: userOrders });
     } catch (error) {
-      set({ error: 'Failed to fetch orders' });
-      console.error(error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch orders';
+      set({ error: errorMessage });
+      console.error('Error fetching orders:', error);
     } finally {
       set({ isLoading: false });
     }
@@ -40,10 +58,10 @@ export const useOrderStore = create<OrderStore>((set) => ({
   cancelOrder: async (orderId) => {
     try {
       set({ isLoading: true, error: null });
-      await axiosInstance.patch(`api/v1/orders/${orderId}/`, { status: 'cancelled' });
+      const updatedOrder = await orderService.cancelOrder(orderId);
       set((state) => ({
         orders: state.orders.map((order) =>
-          order.id === orderId ? { ...order, status: 'cancelled' } : order
+          order.id === orderId ? updatedOrder : order
         ),
       }));
     } catch (error) {

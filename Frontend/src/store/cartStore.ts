@@ -1,13 +1,7 @@
 import { create } from 'zustand';
 import { CartStore, Cart, CartItem } from '../types/cart';
 
-const calculateTotals = (items: CartItem[]): { subtotal: number; tax: number; total: number } => {
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.08; // 8% tax rate
-  const total = subtotal + tax;
-  
-  return { subtotal, tax, total };
-};
+import { calculateCartTotals } from '../utils/priceCalculations';
 
 const initialCart: Cart = {
   items: [],
@@ -19,58 +13,77 @@ const initialCart: Cart = {
 export const useCartStore = create<CartStore>((set) => ({
   cart: initialCart,
   
-  addItem: (newItem) => set((state) => {
-    const existingItem = state.cart.items.find(item => item.menuItemId === newItem.menuItemId);
+  setCart: (cart: Cart) => set({ cart }),
+  
+  addItem: (item: CartItem) => 
+    set((state) => {
+      const existingItemIndex = state.cart.items.findIndex((cartItem) => cartItem.id === item.id);
+      
+      let updatedItems;
+      if (existingItemIndex !== -1) {
+        updatedItems = state.cart.items.map((cartItem, index) =>
+          index === existingItemIndex ? { ...cartItem, quantity: cartItem.quantity + item.quantity } : cartItem
+        );
+      } else {
+        updatedItems = [...state.cart.items, item];
+      }
+
+      const { subtotal, tax, total } = calculateCartTotals(updatedItems);
+      
+      return {
+        cart: {
+          ...state.cart,
+          items: updatedItems,
+          subtotal,
+          tax,
+          total,
+        },
+      };
+    }),
     
-    let updatedItems;
-    if (existingItem) {
-      updatedItems = state.cart.items.map(item =>
-        item.menuItemId === newItem.menuItemId
-          ? { ...item, quantity: item.quantity + newItem.quantity }
-          : item
+  removeItem: (itemId: string) =>
+    set((state) => {
+      const updatedItems = state.cart.items.filter((item) => item.id !== itemId);
+      const { subtotal, tax, total } = calculateCartTotals(updatedItems);
+      
+      return {
+        cart: {
+          ...state.cart,
+          items: updatedItems,
+          subtotal,
+          tax,
+          total,
+        },
+      };
+    }),
+    
+  updateQuantity: (itemId: string, quantity: number) =>
+    set((state) => {
+      const updatedItems = state.cart.items.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item
       );
-    } else {
-      updatedItems = [...state.cart.items, newItem];
-    }
+      const { subtotal, tax, total } = calculateCartTotals(updatedItems);
+      
+      return {
+        cart: {
+          ...state.cart,
+          items: updatedItems,
+          subtotal,
+          tax,
+          total,
+        },
+      };
+    }),
     
-    return {
-      cart: {
-        items: updatedItems,
-        ...calculateTotals(updatedItems),
-      },
-    };
-  }),
-  
-  removeItem: (itemId) => set((state) => {
-    const updatedItems = state.cart.items.filter(item => item.id !== itemId);
-    return {
-      cart: {
-        items: updatedItems,
-        ...calculateTotals(updatedItems),
-      },
-    };
-  }),
-  
-  updateQuantity: (itemId, quantity) => set((state) => {
-    const updatedItems = state.cart.items.map(item =>
-      item.id === itemId ? { ...item, quantity } : item
-    );
-    return {
-      cart: {
-        items: updatedItems,
-        ...calculateTotals(updatedItems),
-      },
-    };
-  }),
-  
-  addSpecialInstructions: (itemId, instructions) => set((state) => ({
-    cart: {
-      ...state.cart,
-      items: state.cart.items.map(item =>
-        item.id === itemId ? { ...item, specialInstructions: instructions } : item
-      ),
-    },
-  })),
-  
   clearCart: () => set({ cart: initialCart }),
+
+  addSpecialInstructions: (itemId: string, instructions: string) =>
+    set((state) => ({
+      cart: {
+        ...state.cart,
+        items: state.cart.items.map((item) =>
+          item.id === itemId ? { ...item, specialInstructions: instructions } : item
+        ),
+      },
+    })),
 }));

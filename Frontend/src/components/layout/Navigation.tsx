@@ -1,12 +1,16 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
+import { useCartStore } from '../../store/cartStore';
 
 const Navigation = () => {
   const { user, logout } = useAuthStore();
+  const { cart } = useCartStore();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
+
+  const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleLogout = async () => {
     try {
@@ -55,11 +59,22 @@ const Navigation = () => {
 
             {user?.role === 'customer' && (
               <>
-                <Link to="/cart" className="text-gray-600 hover:text-gray-900">
-                  Cart
-                </Link>
                 <Link to="/orders" className="text-gray-600 hover:text-gray-900">
                   Orders
+                </Link>
+                <Link to="/book-table" className="text-gray-600 hover:text-gray-900">
+                  Book Table
+                </Link>
+                <Link 
+                  to="/cart" 
+                  className="relative text-gray-600 hover:text-gray-900"
+                >
+                  <ShoppingCart className="w-6 h-6" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                      {itemCount}
+                    </span>
+                  )}
                 </Link>
               </>
             )}
@@ -150,15 +165,27 @@ const Navigation = () => {
                 <>
                   <Link
                     to="/cart"
-                    className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900"
                   >
-                    Cart
+                    <ShoppingCart className="w-5 h-5" />
+                    <span>Cart</span>
+                    {itemCount > 0 && (
+                      <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
+                        {itemCount}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to="/orders"
                     className="block px-3 py-2 text-gray-600 hover:text-gray-900"
                   >
                     Orders
+                  </Link>
+                  <Link
+                    to="/book-table"
+                    className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                  >
+                    Book Table
                   </Link>
                 </>
               )}

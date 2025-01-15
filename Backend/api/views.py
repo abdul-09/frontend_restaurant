@@ -1,6 +1,10 @@
 from django.shortcuts import render
 from rest_framework.response import Response
+from django.core.exceptions import ValidationError
+from decimal import Decimal
+
 from .models import MenuItem, Cart, CartItem, Order, OrderItem, Category, Table, TableBooking
+from .utils import generate_unique_order_reference
 from .serializers import (
     CategorySerializer,
     MenuItemSerializer,
@@ -36,8 +40,12 @@ from rest_framework.decorators import api_view, permission_classes
 from django.views.decorators.csrf import ensure_csrf_cookie
 from djoser.views import UserViewSet
 from django.contrib.auth import get_user_model
-
+import logging
+import requests
+from django.conf import settings
 User = get_user_model()  # Get the custom User model
+
+logger = logging.getLogger(__name__)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -78,129 +86,241 @@ class CartViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         """
-        Get an item from cart
+        Get a specific cart item
         """
-        cart_item = get_object_or_404(CartItem, cart__customer=self.request.user, pk=pk)
+        cart_item = get_object_or_404(CartItem, cart__customer=request.user, pk=pk)
         serializer = CartItemSerializer(cart_item)
         return Response(serializer.data)
 
-    def add_to_cart(self, request):
+    def partial_update(self, request, pk=None):
         """
-        Add an item to cart
+        Update quantity of a cart item
         """
-        cart, created = Cart.objects.get_or_create(customer=request.user)
-
-        item_id = request.data.get("menuitem")
-        quantity = int(request.data.get("quantity", 1))
-        menuitem = get_object_or_404(MenuItem, pk=item_id)
-
-        if quantity < 0:
+        try:
+            cart_item = get_object_or_404(CartItem, cart__customer=request.user, pk=pk)
+            quantity = request.data.get('quantity')
+            
+            if quantity is not None:
+                quantity = int(quantity)
+                if quantity <= 0:
+                    return Response(
+                        {"detail": "Quantity must be positive"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                cart_item.quantity = quantity
+                cart_item.save()
+                
+                # Return the updated cart
+                cart = cart_item.cart
+                print("Cart item saved:", cart)
+                cart_serializer = CartSerializer(cart)
+                return Response(cart_serializer.data)
+            
             return Response(
-                {"detail": "quantity cannot be negative", "status": "fail"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "Quantity is required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart, menuitem=menuitem
-        )
+            
+        except ValueError:
+            return Response(
+                {"detail": "Invalid quantity value"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if not created:
-            cart_item.quantity = quantity
-        else:
-            cart_item.quantity = quantity
-
-        cart_item.save()
-
-        # Serialize the cart item after it's saved
-        serializer = CartItemSerializer(cart_item)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def remove_from_cart(self, request, pk=None):
+    def destroy(self, request, pk=None):
         """
         Remove an item from cart
         """
         cart_item = get_object_or_404(CartItem, cart__customer=request.user, pk=pk)
         cart_item.delete()
-        return Response(
-            {"detail": "Item removed from cart", "status": "ok"},
-            status=status.HTTP_204_NO_CONTENT,
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def add_to_cart(self, request):
+        """
+        Add an item to cart
+        """
+        try:
+            print("Received data:", request.data)
+            
+            cart, created = Cart.objects.get_or_create(customer=request.user)
+
+            item_id = request.data.get("menuitem")
+            if not item_id:
+                return Response(
+                    {"detail": "menuitem is required", "received_data": request.data},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                quantity = int(request.data.get("quantity", 1))
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "Invalid quantity value", "received_data": request.data},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                menuitem = MenuItem.objects.get(pk=item_id)
+            except MenuItem.DoesNotExist:
+                return Response(
+                    {"detail": f"Menu item with id {item_id} not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if quantity <= 0:
+                return Response(
+                    {"detail": "Quantity must be positive"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart,
+                menuitem=menuitem,
+                defaults={
+                    'price': menuitem.price,
+                    'quantity': quantity,
+                    'image': menuitem.image
+                }
+            )
+
+            if not created:
+                cart_item.quantity += quantity
+            else:
+                cart_item.quantity = quantity
+                cart_item.price = menuitem.price
+                cart_item.image = menuitem.image
+
+            cart_item.save()
+            
+            # Return the updated cart
+            cart_serializer = CartSerializer(cart)
+            return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print("Error in add_to_cart:", str(e))
+            return Response(
+                {
+                    "detail": "Error adding to cart",
+                    "error": str(e),
+                    "received_data": request.data
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.groups.filter(name="Managers").exists():
-            return Order.objects.all()
-        elif user.groups.filter(name="Crew").exists():
-            return Order.objects.filter(delivery_crew=user)
-        return Order.objects.filter(customer=user)
+    queryset = Order.objects.all()
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        cart_items = CartItem.objects.filter(cart__customer=request.user)
-        if not cart_items.exists():
-            return Response(
-                {"error": "Cart is empty"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        try:
+            print(f"Incoming order data: {request.data}")
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        order = serializer.save(customer=request.user)
-
-        # Create order items
-        for cart_item in cart_items:
-            OrderItem.objects.create(
-                order=order,
-                menuitem=cart_item.menuitem,
-                quantity=cart_item.quantity,
-                price=cart_item.unit_price
-            )
-
-        # Clear cart
-        cart_items.delete()
-
-        return Response(
-            self.get_serializer(order).data,
-            status=status.HTTP_201_CREATED
-        )
-
-    def partial_update(self, request, *args, **kwargs):
-        order = self.get_object()
-        user = request.user
-
-        # Only managers can assign delivery crew
-        if 'delivery_crew' in request.data:
-            if not user.groups.filter(name="Managers").exists():
+            print(f"request.user.id: {request.user.id}")
+            
+            # Validate delivery type
+            delivery_data = request.data.get('delivery', {})
+            delivery_type = delivery_data.get('type')
+            
+            if delivery_type not in ['delivery', 'pickup', 'dine-in']:
                 return Response(
-                    {"error": "Only managers can assign delivery crew"},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            if order.delivery_type != 'delivery':
-                return Response(
-                    {"error": "Delivery crew can only be assigned to delivery orders"},
+                    {"error": "Invalid delivery type"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Only delivery crew can update status of their assigned orders
-        if 'status' in request.data:
-            if user.groups.filter(name="Crew").exists():
-                if order.delivery_crew != user:
-                    return Response(
-                        {"error": "You can only update your assigned orders"},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-            elif not user.groups.filter(name="Managers").exists():
+            # Generate unique reference with lock
+            with transaction.atomic():
+                reference = generate_unique_order_reference()
+                # Double-check if reference exists
+                while Order.objects.filter(reference=reference).exists():
+                    reference = generate_unique_order_reference()
+
+            # Validate delivery data based on type
+            if delivery_type == 'delivery':
+                required_fields = ['address', 'contactNumber']
+            elif delivery_type in ['pickup', 'dine-in']:
+                required_fields = ['contactNumber', 'preferredTime']
+            
+            missing_fields = [field for field in required_fields 
+                            if not delivery_data.get(field)]
+            
+            if missing_fields:
                 return Response(
-                    {"error": "You don't have permission to update order status"},
-                    status=status.HTTP_403_FORBIDDEN
+                    {
+                        "error": f"Missing required fields for {delivery_type}",
+                        "missing_fields": missing_fields
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
-        return super().partial_update(request, *args, **kwargs)
+            # Prepare order data
+            order_data = {
+                'customer': request.user.id,  # Changed from userId to customer
+                'reference': reference,
+                'items': request.data.get('items', []),
+                'status': 'pending',
+                'subtotal': request.data.get('subtotal'),
+                'tax': request.data.get('tax'),
+                'deliveryFee': request.data.get('deliveryFee', 0),
+                'total': request.data.get('total'),
+                'paymentMethod': request.data.get('paymentMethod'),
+                'delivery': delivery_data
+            }
 
+            # Create order using serializer
+            serializer = self.get_serializer(data=order_data)
+            
+            if not serializer.is_valid():
+                logger.error(f"Serializer validation errors: {serializer.errors}")
+                return Response(
+                    {"error": "Invalid order data", "details": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                with transaction.atomic():
+                    order = serializer.save()
+                    print(f"Serialized order data: {OrderSerializer(order).data}")
+                    print(f"Order created successfully: {order.reference}")
+                    print(order)
+                    
+                    # Clear the user's cart
+                    CartItem.objects.filter(cart__customer=request.user).delete()
+
+                    # Serialize the created order
+                    
+
+                    return Response(
+                        {
+                            "message": "Order created successfully",
+                            "order": OrderSerializer(order).data
+                        },
+                        status=status.HTTP_201_CREATED
+                    )
+            except Exception as e:
+                logger.error(f"Error saving order: {str(e)}")
+                return Response(
+                    {"error": f"Error saving order: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Exception as e:
+            logger.error(f"Error in create: {str(e)}")
+            return Response(
+                {
+                    "error": "Failed to create order",
+                    "detail": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class ManagerViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -514,3 +634,101 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Override to exclude superusers from the list"""
         return User.objects.filter(is_superuser=False)
+
+
+@api_view(['POST'])
+def verify_payment(request, order_id):
+    try:
+        # Get the order first
+        order = Order.objects.get(id=order_id)
+        
+        # Get the Paystack reference from the request body
+        paystack_ref = request.data.get('paystackRef')
+        if not paystack_ref:
+            return Response({
+                'status': 'failed', 
+                'error': 'Paystack reference is required'
+            }, status=400)
+
+        order.paystack_reference = paystack_ref
+        order.save()
+
+        url = f'https://api.paystack.co/transaction/verify/{paystack_ref}'
+        headers = {
+            'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}',
+            'Content-Type': 'application/json',
+        }
+        
+        logger.info(f"Verifying payment for order {order_id} with reference {paystack_ref}")
+        response = requests.get(url, headers=headers)
+        logger.debug(f"Paystack response: {response.content}")
+        
+        if response.status_code != 200:
+            return Response({
+                'status': 'failed', 
+                'error': 'Failed to verify payment with Paystack'
+            }, status=response.status_code)
+        
+        data = response.json()
+        
+        if data.get('status') and data['data'].get('status') == 'success':
+            amount_paid = Decimal(str(data['data'].get('amount', 0))) / Decimal('100')
+            order_total = Decimal(str(order.total))
+
+            if abs(amount_paid - order_total) > Decimal('0.01'):
+                logger.error(f"Amount mismatch: paid={amount_paid}, order={order_total}")
+                return Response({
+                    'status': 'failed',
+                    'error': 'Payment amount does not match order amount'
+                }, status=400)
+
+            order.status = 'confirmed'
+            order.paid = True
+            order.save()
+            
+            logger.info(f"Payment verified successfully for order {order_id}")
+            return Response({'status': 'success'})
+            
+        return Response({
+            'status': 'failed', 
+            'error': 'Payment verification failed'
+        })
+        
+    except Order.DoesNotExist:
+        return Response({
+            'status': 'failed', 
+            'error': 'Order not found'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Error in verify_payment: {str(e)}")
+        return Response({
+            'status': 'failed', 
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['POST'])
+def create_order(request):
+    print("Incoming order data:", request.data)  # Debug print
+    
+    serializer = OrderSerializer(data=request.data)
+    if serializer.is_valid():
+        try:
+            order = serializer.save()
+            return Response({
+                'status': 'success',
+                'order': OrderSerializer(order).data
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    print("Validation errors:", serializer.errors)  # Debug print
+    return Response({
+        'status': 'error',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+

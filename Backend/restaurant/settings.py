@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from decouple import config
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -128,8 +129,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -199,7 +200,8 @@ DJOSER = {
     }
 }
 
-
+# settings.py
+PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
 # docs settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "Restaurant-Management-API",
@@ -244,3 +246,23 @@ CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DOMAIN = 'localhost:5173'
 SITE_NAME = 'Restaurant App'
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'trashapi': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}

@@ -54,6 +54,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 class CartItemInline(admin.TabularInline):
     model = CartItem
+    fields = ['menuitem', 'quantity', 'price']
+    readonly_fields = ['price']
     extra = 1
 
 class CartAdmin(admin.ModelAdmin):
@@ -65,7 +67,7 @@ class OrderItemInline(admin.TabularInline):
     extra = 1
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'customer', 'delivery_crew', 'status', 'total', 'created']
+    list_display = ['id', 'customer', 'paid', 'status', 'total', 'created']
     list_filter = ['status', 'delivery_type', 'created']
     search_fields = ['customer__email', 'delivery_crew__email']
     inlines = [OrderItemInline]

@@ -12,6 +12,7 @@ from .views import (
     DeliveryOrderViewSet,
     UserManagementViewSet,
     logout_view,
+    verify_payment,
 )
 
 router = DefaultRouter()
@@ -25,15 +26,25 @@ router.register(r'tables', TableViewSet, basename='table')
 router.register(r'table-bookings', TableBookingViewSet, basename='table-booking')
 router.register(r'delivery-orders', DeliveryOrderViewSet, basename='delivery-orders')
 router.register(r'users', UserManagementViewSet, basename='users')
+# router.register(r'cart', CartViewSet, basename='cart')
 
-cart_list = CartViewSet.as_view({"get": "list", "post": "add_to_cart"})
-cart_remove = CartViewSet.as_view({"delete": "remove_from_cart"})
+cart_list = CartViewSet.as_view({
+    'get': 'list',
+    'post': 'add_to_cart'
+})
+
+cart_detail = CartViewSet.as_view({
+    'get': 'retrieve',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
 
 urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.jwt")),
     path("cart/", cart_list, name="cart-list"),
-    path("cart/<int:pk>/", cart_remove, name="cart-remove"),
+    path("cart/<int:pk>/", cart_detail, name="cart-detail"),
     path("auth/jwt/logout/", logout_view, name="auth-logout"),
+    path('payments/verify/<int:order_id>/', verify_payment, name='verify-payment'),
 ]

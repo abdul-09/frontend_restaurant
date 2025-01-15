@@ -1,6 +1,7 @@
+
 export interface CartItem {
   id: string;
-  menuItemId: string;
+  menuitem: number;
   name: string;
   price: number;
   quantity: number;
@@ -18,6 +19,7 @@ export interface Cart {
 
 export interface CartStore {
   cart: Cart;
+  setCart: (cart: Cart) => void;
   addItem: (item: CartItem) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;

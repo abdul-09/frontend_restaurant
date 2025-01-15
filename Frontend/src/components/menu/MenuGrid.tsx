@@ -1,9 +1,12 @@
-import React from 'react';
+// import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axios';
 import { MenuItem } from '../../types/menu';
+// import { useCartStore } from '../../store/cartStore';
+import cartService from '../../services/cartService';
+import { CartItem } from '../../types/cart';
 import { useCartStore } from '../../store/cartStore';
 
 interface MenuGridProps {
@@ -13,6 +16,9 @@ interface MenuGridProps {
 }
 
 export default function MenuGrid({ selectedCategory, searchQuery, sortBy }: MenuGridProps) {
+
+  const setCart = useCartStore((state) => state.setCart);
+
   const { data: menuItems = [] } = useQuery({
     queryKey: ['menuItems'],
     queryFn: async () => {
@@ -24,21 +30,27 @@ export default function MenuGrid({ selectedCategory, searchQuery, sortBy }: Menu
     },
   });
 
-  console.log('Fetched menu items:', menuItems);
-  console.log('Selected Category:', selectedCategory);
+  // console.log('Fetched menu items:', menuItems);
+  // console.log('Selected Category:', selectedCategory);
 
-  const addItem = useCartStore((state) => state.addItem);
+  // const addItem = useCartStore((state) => state.addItem);
 
-  const handleAddToCart = (item: MenuItem) => {
-    addItem({
-      id: crypto.randomUUID(),
-      menuItemId: item.id.toString(),
-      name: item.name,
-      price: item.price,
+  const handleAddToCart = async (menuItem: MenuItem) => {
+    const cartItem: Omit<CartItem, 'id'> = {
+      menuitem: menuItem.id,
+      name: menuItem.name,
+      price: menuItem.price,
       quantity: 1,
-      image: item.image,
-    });
-    toast.success(`${item.name} added to cart`);
+      image: menuItem.image
+    };
+    try {
+      await cartService.addToCart(cartItem, setCart);
+      console.log("sent to backend")
+      toast.success(`${menuItem.name} added to cart`);
+    } catch (error) {
+      toast.error('Failed to add item to cart');
+      console.error(error)
+    }
   };
 
   const filteredMenuItems = menuItems

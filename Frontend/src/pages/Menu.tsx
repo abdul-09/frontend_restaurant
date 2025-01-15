@@ -36,7 +36,7 @@ export default function Menu() {
             <option value="price-desc">Price (High to Low)</option>
           </select>
           
-          <div className="flex items-center border border-gray-300 rounded-lg">
+          {/* <div className="flex items-center border border-gray-300 rounded-lg">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600'}`}
@@ -49,7 +49,7 @@ export default function Menu() {
             >
               <List className="w-5 h-5" />
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 

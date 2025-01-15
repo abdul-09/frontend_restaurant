@@ -4,9 +4,9 @@ export type DeliveryType = 'delivery' | 'pickup' | 'dine-in';
 
 export interface OrderItem {
   id: string;
-  menuItemId: string;
+  menuitem: number;
   name: string;
-  price: number;
+  price: string;
   quantity: number;
   specialInstructions?: string;
 }
@@ -19,10 +19,45 @@ export interface DeliveryInfo {
   preferredTime?: string;
 }
 
+export interface Customer {
+  id: number;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface Order {
   id: string;
-  userId: string;
+  reference: string;
+  customer: Customer;
   items: OrderItem[];
+  status: OrderStatus;
+  subtotal: string;
+  tax: string;
+  deliveryFee: string;
+  total: string;
+  paymentMethod: PaymentMethod;
+  delivery: DeliveryInfo;
+  created: string;
+  updated: string;
+}
+
+export interface OrderResponse {
+  message: string;
+  order: Order;
+}
+
+export interface CreateOrderItem {
+  menuitem: number;
+  quantity: number;
+  price: number;
+  specialInstructions: string;
+}
+
+export interface CreateOrder {
+  customer: number;
+  items: CreateOrderItem[];
   status: OrderStatus;
   subtotal: number;
   tax: number;
@@ -30,8 +65,6 @@ export interface Order {
   total: number;
   paymentMethod: PaymentMethod;
   delivery: DeliveryInfo;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface OrderStore {
@@ -39,7 +72,7 @@ export interface OrderStore {
   currentOrder: Order | null;
   isLoading: boolean;
   error: string | null;
-  createOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  createOrder: (order: CreateOrder) => Promise<OrderResponse>;
   fetchOrders: () => Promise<void>;
   cancelOrder: (orderId: string) => Promise<void>;
 }

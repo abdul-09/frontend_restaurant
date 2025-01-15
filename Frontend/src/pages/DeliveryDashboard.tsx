@@ -103,4 +103,27 @@ export default function DeliveryDashboard() {
       </div>
     </div>
   );
-} 
+}
+
+// import React from 'react';
+// import { useAuthStore } from '../store/authStore';
+// import DeliveryQueue from '../components/delivery/DeliveryQueue';
+
+// export default function DeliveryDashboard() {
+//   const { user } = useAuthStore();
+
+//   if (user?.role !== 'delivery') {
+//     return (
+//       <div className="text-center py-12">
+//         <p className="text-gray-500">Access denied. This page is only for delivery crew members.</p>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="max-w-4xl mx-auto py-8 px-4">
+//       <h1 className="text-2xl font-bold text-gray-900 mb-8">Delivery Dashboard</h1>
+//       <DeliveryQueue />
+//     </div>
+//   );
+// }

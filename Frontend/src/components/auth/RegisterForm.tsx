@@ -23,7 +23,7 @@ export default function RegisterForm() {
       navigate('/login');
     } catch (error) {
   
-      console.log(error.message)
+      console.log(error)
     }
   };
 
@@ -50,7 +50,7 @@ export default function RegisterForm() {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
                 required
               />
             </div>
@@ -63,7 +63,7 @@ export default function RegisterForm() {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
                 required
               />
             </div>
@@ -78,7 +78,7 @@ export default function RegisterForm() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
               required
             />
           </div>
@@ -92,7 +92,7 @@ export default function RegisterForm() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
               required
             />
           </div>

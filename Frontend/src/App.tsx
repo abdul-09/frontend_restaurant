@@ -14,6 +14,8 @@ import ResetPasswordConfirm from './components/auth/ResetPasswordConfirm';
 import MenuManagement from './pages/MenuManagement';
 import DeliveryDashboard from './pages/DeliveryDashboard';
 import UserManagement from './pages/UserManagement';
+import Cart from './pages/Cart';
+import TableBooking from './pages/TableBooking';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,7 @@ function App() {
             
             {/* Common Routes */}
             <Route path="menu" element={<Menu />} />
+            <Route path="cart" element={<Cart />} />
             
             {/* Customer Routes */}
             <Route path="orders" element={
@@ -50,6 +53,11 @@ function App() {
             <Route path="checkout" element={
               <ProtectedRoute allowedRoles={['customer']}>
                 <Checkout />
+              </ProtectedRoute>
+            } />
+            <Route path="book-table" element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <TableBooking />
               </ProtectedRoute>
             } />
 

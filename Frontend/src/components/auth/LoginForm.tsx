@@ -33,7 +33,8 @@ export default function LoginForm() {
           navigate('/customer/dashboard');
       }
 
-      toast.success(`Welcome back, ${result.user.firstName}! (${result.user.role})`);
+      toast.success(`Welcome back, ${result.user.firstName}!`);
+      // (${result.user.role})
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed. Please check your credentials.');
@@ -57,7 +58,7 @@ export default function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
               required
             />
           </div>
@@ -70,7 +71,7 @@ export default function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
               required
             />
           </div>
