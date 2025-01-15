@@ -12,3 +12,4 @@ whitenoise
 psycopg2
 psycopg
 dj-database-url
+bleach
