@@ -178,7 +178,7 @@ export default function Checkout() {
               }
 
               const verifyResponse = await fetch(
-                `http://127.0.0.1:8000/api/v1/payments/verify/${createdOrder.id}/`,
+                `https://restaurant-api-add9.onrender.com/api/v1/payments/verify/${createdOrder.id}/`,
                 {
                   method: 'POST',
                   headers: {
