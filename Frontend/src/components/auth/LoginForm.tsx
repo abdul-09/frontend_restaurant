@@ -80,6 +80,10 @@ export default function LoginForm() {
             <a 
               href="/reset-password" 
               className="text-indigo-600 hover:text-indigo-500"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/reset-password');
+              }}
             >
               Forgot your password?
             </a>
@@ -96,7 +100,14 @@ export default function LoginForm() {
         
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <a href="/register" className="text-indigo-600 hover:text-indigo-500 font-semibold">
+          <a 
+            href="/register" 
+            className="text-indigo-600 hover:text-indigo-500 font-semibold"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/register');
+            }}
+          >
             Sign up
           </a>
         </p>

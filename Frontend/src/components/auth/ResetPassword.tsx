@@ -14,6 +14,7 @@ export default function ResetPassword() {
       await authService.requestPasswordReset(email);
       toast.success('Password reset email sent! Please check your inbox.');
     } catch (error) {
+      console.log(error)
       toast.error('Failed to send reset email. Please try again.');
     } finally {
       setIsSubmitting(false);
