@@ -222,23 +222,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-CORS_ALLOW_ALL_ORIGINS = True  # Only for development!
-# For production, use:
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-CORS_ALLOW_ALL_ORIGINS = True 
-
-CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS'
-]
-CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = 'api.User'
 
@@ -260,7 +243,15 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "https://frontend-restaurant-orcin.vercel.app",
+]
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
 ]
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 

@@ -57,7 +57,7 @@ export default function BookingForm() {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Book a Table</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 ">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Date</label>
@@ -67,7 +67,7 @@ export default function BookingForm() {
                 type="date"
                 value={formData.booking_date}
                 onChange={(e) => setFormData({ ...formData, booking_date: e.target.value })}
-                className="pl-10 w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                className="pl-10 w-full rounded-lg border border-gray-500 focus:border-transparent"
                 min={new Date().toISOString().split('T')[0]}
                 required
               />
@@ -82,7 +82,7 @@ export default function BookingForm() {
                 type="time"
                 value={formData.booking_time}
                 onChange={(e) => setFormData({ ...formData, booking_time: e.target.value })}
-                className="pl-10 w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                className="pl-10 w-full rounded-lg border border-gray-500 focus:border-transparent"
                 min="11:00"
                 max="23:00"
                 required
@@ -101,7 +101,7 @@ export default function BookingForm() {
               max="20"
               value={formData.number_of_guests}
               onChange={(e) => setFormData({ ...formData, number_of_guests: parseInt(e.target.value) })}
-              className="pl-10 w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+              className="pl-10 w-full rounded-lg border border-gray-500 focus:border-transparent"
               required
             />
           </div>
@@ -137,7 +137,7 @@ export default function BookingForm() {
             value={formData.special_requests}
             onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
             rows={3}
-            className="mt-1 w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 w-full rounded-lg border border-gray-500 focus:border-transparent"
             placeholder="Any special requests or preferences..."
           />
         </div>
