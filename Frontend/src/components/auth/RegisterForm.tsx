@@ -108,7 +108,14 @@ export default function RegisterForm() {
         
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <a href="/login" className="text-indigo-600 hover:text-indigo-500 font-semibold">
+          <a 
+          href="/login"
+          className="text-indigo-600 hover:text-indigo-500 font-semibold"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/login');
+          }}
+          >
             Sign in
           </a>
         </p>

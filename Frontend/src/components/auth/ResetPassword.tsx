@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { authService } from '../../services/auth';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function ResetPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +56,14 @@ export default function ResetPassword() {
         
         <p className="mt-6 text-center text-sm text-gray-600">
           Remember your password?{' '}
-          <a href="/login" className="text-indigo-600 hover:text-indigo-500 font-semibold">
+          <a 
+          href="/login"
+          className="text-indigo-600 hover:text-indigo-500 font-semibold"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/login');
+          }}
+          >
             Sign in
           </a>
         </p>
