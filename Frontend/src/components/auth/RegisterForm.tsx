@@ -96,6 +96,19 @@ export default function RegisterForm() {
               required
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
+              required
+            />
+          </div>
           
           <button
             type="submit"
