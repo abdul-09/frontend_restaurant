@@ -67,7 +67,7 @@ export default function BookingForm() {
                 type="date"
                 value={formData.booking_date}
                 onChange={(e) => setFormData({ ...formData, booking_date: e.target.value })}
-                className="pl-10 w-full rounded-lg border border-gray-500 focus:border-transparent"
+                className="pl-10 w-full rounded-lg border border-gray-400 focus:border-transparent"
                 min={new Date().toISOString().split('T')[0]}
                 required
               />
@@ -82,7 +82,7 @@ export default function BookingForm() {
                 type="time"
                 value={formData.booking_time}
                 onChange={(e) => setFormData({ ...formData, booking_time: e.target.value })}
-                className="pl-10 w-full rounded-lg border border-gray-500 focus:border-transparent"
+                className="pl-10 w-full rounded-lg border border-gray-400 focus:border-transparent"
                 min="11:00"
                 max="23:00"
                 required
@@ -101,7 +101,7 @@ export default function BookingForm() {
               max="20"
               value={formData.number_of_guests}
               onChange={(e) => setFormData({ ...formData, number_of_guests: parseInt(e.target.value) })}
-              className="pl-10 w-full rounded-lg border border-gray-500 focus:border-transparent"
+              className="pl-10 w-full rounded-lg border border-gray-400 focus:border-transparent"
               required
             />
           </div>
@@ -137,7 +137,7 @@ export default function BookingForm() {
             value={formData.special_requests}
             onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
             rows={3}
-            className="mt-1 w-full rounded-lg border border-gray-500 focus:border-transparent"
+            className="mt-1 w-full rounded-lg border border-gray-400 focus:border-transparent"
             placeholder="Any special requests or preferences..."
           />
         </div>
