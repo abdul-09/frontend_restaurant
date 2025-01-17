@@ -8,6 +8,7 @@ export default function RegisterForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    re_password: '',
     firstName: '',
     lastName: '',
   });
@@ -17,13 +18,27 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.password !== formData.re_password) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
     try {
       await register(formData);
       toast.success('Registration successful! Please login.');
       navigate('/login');
-    } catch (error) {
-  
-      console.log(error)
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      if (error.response?.data) {
+        Object.entries(error.response.data).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            toast.error(`${key}: ${value[0]}`);
+          }
+        });
+      } else {
+        toast.error('Registration failed. Please try again.');
+      }
     }
   };
 
@@ -96,14 +111,15 @@ export default function RegisterForm() {
               required
             />
           </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirm Password
             </label>
             <input
               type="password"
-              name="password"
-              value={formData.password}
+              name="re_password"
+              value={formData.re_password}
               onChange={handleChange}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-transparent"
               required

@@ -29,6 +29,7 @@ export interface AuthState {
 export interface RegisterData {
   email: string;
   password: string;
+  re_password: string;
   firstName: string;
   lastName: string;
 }
