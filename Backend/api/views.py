@@ -74,22 +74,14 @@ class PasswordResetView(APIView):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
         reset_link = f"https://frontend-restaurant-orcin.vercel.app/reset-password/?uid={uid}&token={token}/"
-        
-        # Render the email template
-        html_message = render_to_string('email/password_reset_email.html', {
-            'reset_link': reset_link,
-            'site_name': 'Restaurant App',
-        })
-        plain_message = strip_tags(html_message)
-
         send_mail(
             'Password Reset',
-            plain_message,
+            f'Click the link to reset your password: {reset_link}',
             'no-reply@yourdomain.com',
             [email],
-            html_message=html_message,
             fail_silently=False,
         )
+
 
         return Response({'message': 'Password reset link sent.'}, status=status.HTTP_200_OK)
     
