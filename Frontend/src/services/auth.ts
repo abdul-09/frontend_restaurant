@@ -96,7 +96,7 @@ export const authService = {
 
   requestPasswordReset: async (email: string) => {
     try {
-      await axiosInstance.post('/api/v1/auth/users/reset_password/', { email });
+      await axiosInstance.post('/api/v1/auth/password/reset/', { email });
       return true;
     } catch (error) {
         console.error('Password reset request error:', error);
@@ -106,7 +106,7 @@ export const authService = {
 
   resetPasswordConfirm: async (uid: string, token: string, new_password: string) => {
     try {
-        await axiosInstance.post('/api/v1/auth/users/reset_password_confirm/', {
+        await axiosInstance.post('/api/v1/auth/password/reset/confirm/', {
             uid,
             token,
             new_password,

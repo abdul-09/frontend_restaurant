@@ -38,15 +38,93 @@ from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
 from rest_framework.decorators import api_view, permission_classes
 from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework.views import APIView
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework.permissions import AllowAny
+from django.utils.http import urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_bytes
 from djoser.views import UserViewSet
 from django.contrib.auth import get_user_model
 import logging
 import requests
 from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 User = get_user_model()  # Get the custom User model
 
 logger = logging.getLogger(__name__)
 
+
+
+class PasswordResetView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_generator = PasswordResetTokenGenerator()
+        token = token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        reset_link = f"https://frontend-restaurant-orcin.vercel.app/reset-password/?uid={uid}&token={token}/"
+        
+        # Render the email template
+        html_message = render_to_string('email/password_reset_email.html', {
+            'reset_link': reset_link,
+            'site_name': 'Restaurant App',
+        })
+        plain_message = strip_tags(html_message)
+
+        send_mail(
+            'Password Reset',
+            plain_message,
+            'no-reply@yourdomain.com',
+            [email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+
+        return Response({'message': 'Password reset link sent.'}, status=status.HTTP_200_OK)
+    
+class PasswordResetConfirmView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('new_password')
+        re_new_password = request.data.get('re_new_password')
+
+        print("Received UID:", uid)
+        print("Received Token:", token)
+        print("New Password:", new_password)
+        print("Re-New Password:", re_new_password)
+
+        if not all([uid, token, new_password, re_new_password]):
+            return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            u_id = urlsafe_base64_decode(uid).decode()
+            user = User.objects.get(pk=u_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid user ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_generator = PasswordResetTokenGenerator()
+        if not token_generator.check_token(user, token):
+            return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({'message': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
+    
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()

@@ -14,6 +14,8 @@ from .views import (
     UserManagementViewSet,
     logout_view,
     verify_payment,
+    PasswordResetView,
+    PasswordResetConfirmView,
 )
 
 router = DefaultRouter()
@@ -48,6 +50,8 @@ urlpatterns = [
     path("cart/<int:pk>/", cart_detail, name="cart-detail"),
     path("auth/jwt/logout/", logout_view, name="auth-logout"),
     path('payments/verify/<int:order_id>/', verify_payment, name='verify-payment'),
+    path('auth/password/reset/', PasswordResetView.as_view(), name='password-reset'),
+    path('auth/password/reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     # Catch-all route for React
     re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
 ]

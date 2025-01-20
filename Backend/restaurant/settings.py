@@ -200,9 +200,9 @@ DJOSER = {
     "SEND_CONFIRMATION_EMAIL": True,
     "PASSWORD_RESET_CONFIRM_URL": "reset-password/{uid}/{token}",
     'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
-    'EMAIL': {
-        'password_reset': 'api.emails.PasswordResetEmail',
-    },
+    # 'EMAIL': {
+    #     'password_reset': 'api.emails.PasswordResetEmail',
+    # },
     "SET_PASSWORD_RETYPE": True,
     "PASSWORD_RESET_CONFIRM_RETYPE": True,
     "TOKEN_MODEL": None,
