@@ -1,4 +1,5 @@
-from django.urls import path, include
+from django.urls import path, re_path, include
+from django.views.generic import TemplateView
 from rest_framework.routers import DefaultRouter
 from .views import (
     MenuItemViewSet,
@@ -47,4 +48,6 @@ urlpatterns = [
     path("cart/<int:pk>/", cart_detail, name="cart-detail"),
     path("auth/jwt/logout/", logout_view, name="auth-logout"),
     path('payments/verify/<int:order_id>/', verify_payment, name='verify-payment'),
+    # Catch-all route for React
+    re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
 ]
