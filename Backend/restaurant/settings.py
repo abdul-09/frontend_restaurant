@@ -69,7 +69,7 @@ ROOT_URLCONF = "restaurant.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, 'templates')],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -199,6 +199,10 @@ DJOSER = {
     "PASSWORD_CHANGED_EMAIL_CONFIRMATION": False,
     "SEND_CONFIRMATION_EMAIL": True,
     "PASSWORD_RESET_CONFIRM_URL": "reset-password/{uid}/{token}",
+    'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
+    'EMAIL': {
+        'password_reset': 'email.password_reset_email',
+    },
     "SET_PASSWORD_RETYPE": True,
     "PASSWORD_RESET_CONFIRM_RETYPE": True,
     "TOKEN_MODEL": None,

@@ -26,6 +26,7 @@ export default function ResetPasswordConfirm() {
       toast.success('Password reset successful! Please login with your new password.');
       navigate('/login');
     } catch (error) {
+      console.log(error)
       toast.error('Failed to reset password. Please try again.');
     } finally {
       setIsSubmitting(false);
